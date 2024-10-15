@@ -1,0 +1,21 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"name": "keyboard",
+			"path": "D:/OneDrive/文档/PlatformIO/Projects/keyboard"
+		}
+	],
+	"settings": {
+		"commentTranslate.hover.enabled": true,
+		"files.associations": {
+			"string": "cpp",
+			"array": "cpp",
+			"string_view": "cpp",
+			"algorithm": "cpp",
+			"sstream": "cpp"
+		}
+	}
+}
