@@ -4,8 +4,9 @@ import time
 import cv2
 import cv
 import yolov5 as yolo
-import UID as keyboard
+import HID as keyboard
 import signal
+import threading
 
 
 def handle_interrupt(signal, frame):
@@ -17,6 +18,7 @@ def handle_interrupt(signal, frame):
 map_coordinates = []
 room_coordinates = []
 huodong_coordinates = []
+role_coordinate = (0, 0)
 
 stop_drop = 0
 role_num = ""
@@ -41,7 +43,7 @@ roles = {
     "role_2": {
         "name": "战法",
         "image": "E:/Code/yolov5/dnf/static/npc/npc2.png",
-        "skills": "qwdf",
+        "skills": "qwdwfwq",
     },
     "role_3": {
         "name": "奶萝",
@@ -69,7 +71,7 @@ roles = {
 def yolov5():
     global stop_drop
 
-    data = yolo.find()
+    data = yolo.find(0.6)
     drop_list = []
     monster_list = []
     door_list = []
@@ -82,7 +84,7 @@ def yolov5():
             if drop_coordinates[1] > 350:
                 drop_list.append(drop_coordinates)
         elif "door" in item:
-            door_coordinates = (item["door"][0], item["door"][1] - 25)
+            door_coordinates = (item["door"][0] - 20, item["door"][1] - 25)
             door_list.append(door_coordinates)
 
     print(f"怪物：{monster_list}, 门：{door_list}, 掉落：{drop_list}")
@@ -276,6 +278,15 @@ def ctrl(monster_coordinates):
     skills = roles[role_num]["skills"]
     skill = skills[random.randint(0, len(skills) - 1)]
 
+    if role_coordinates == []:
+        keyboard.press(skill)
+        time.sleep(0.1)
+        keyboard.release(skill)
+        time.sleep(0.1)
+        keyboard.press("left")
+        time.sleep(0.3)
+        keyboard.release("left")
+
     if monster_coordinates:
         if monster_coordinates[0][0] > role_coordinates[0]:
             keyboard.press("right")
@@ -330,7 +341,7 @@ def which_map():
     keyboard.press("space")
     time.sleep(0.1)
     keyboard.release("space")
-    time.sleep(0.5)
+    time.sleep(1)
 
     print(role_num)
 
@@ -470,10 +481,22 @@ def door(door_coordinates=[]):
 
 # 移动到指定坐标
 def go(coordinates_2):
+    global role_coordinate
 
     cv_role = [cv2.imread("E:/Code/yolov5/dnf/static/role.png")]
     data_role = cv.find(cv_role, ["role"])
     coordinates_1 = data_role.get("role", [])
+
+    if (
+        abs(role_coordinate[0] - coordinates_1[0]) < 10
+        and abs(role_coordinate[1] - coordinates_1[1]) < 10
+    ):
+        keyboard.press("left")
+        time.sleep(0.5)
+        keyboard.release("left")
+        return True
+
+    role_coordinate = coordinates_1
 
     print(f"角色坐标 {coordinates_1}，移动到坐标 {coordinates_2}")
 
@@ -495,6 +518,23 @@ def go(coordinates_2):
         time.sleep(0.3)
         keyboard.release("left")
 
+    thread_x = threading.Thread(target=go_x, args=(x, role_speed_x))
+    thread_y = threading.Thread(target=go_y, args=(y, role_speed_y))
+    thread_x.start()
+    thread_y.start()
+
+    time_x = abs(x) / role_speed_x
+    time_y = abs(y) / role_speed_y
+
+    if time_x > time_y:
+        time.sleep(time_x)
+    else:
+        time.sleep(time_y)
+
+    return True
+
+
+def go_x(x, role_speed_x):
     if x > 2:
         keyboard.press("left")
         time.sleep(0.1)
@@ -512,6 +552,9 @@ def go(coordinates_2):
         time.sleep(abs(x) / role_speed_x)
         keyboard.release("right")
 
+
+def go_y(y, role_speed_y):
+    time.sleep(0.2)
     if y > 2:
         keyboard.press("up")
         time.sleep(0.1)
@@ -528,8 +571,6 @@ def go(coordinates_2):
         keyboard.press("down")
         time.sleep(abs(y) / role_speed_y)
         keyboard.release("down")
-
-    return True
 
 
 def main():

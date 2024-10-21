@@ -8,7 +8,7 @@ import pyautogui
 def draw_rectangle(name, top_left, bottom_right):
     if name == "role":
         top_left = (top_left[0] + 45, top_left[1])
-        bottom_right = (bottom_right[0], bottom_right[1] + 160)
+        bottom_right = (bottom_right[0], bottom_right[1] + 140)
     elif name == "G":
         top_left = (top_left[0] - 35, top_left[1])
         bottom_right = (bottom_right[0] + 5, bottom_right[1] + 23)
