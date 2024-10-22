@@ -22,6 +22,7 @@ role_coordinate = (0, 0)
 
 stop_drop = 0
 role_num = ""
+role_height = 0
 map = ""
 row_index = 0
 col_index = 0
@@ -32,38 +33,75 @@ door_count = 0
 roles = {
     "role_0": {
         "name": "召唤",
-        "image": "E:/Code/yolov5/dnf/static/npc/npc0.png",
+        "image": "static/npc/npc0.png",
+        "height": 142,
         "skills": "s",
     },
     "role_1": {
         "name": "气功",
-        "image": "E:/Code/yolov5/dnf/static/npc/npc1.png",
+        "image": "static/npc/npc1.png",
+        "height": 158,
         "skills": "adfwer",
     },
     "role_2": {
         "name": "战法",
-        "image": "E:/Code/yolov5/dnf/static/npc/npc2.png",
+        "image": "static/npc/npc2.png",
+        "height": 142,
         "skills": "qwdwfwq",
     },
     "role_3": {
         "name": "奶萝",
-        "image": "E:/Code/yolov5/dnf/static/npc/npc3.png",
+        "image": "static/npc/npc3.png",
+        "height": 142,
         "skills": "ase",
     },
     "role_4": {
         "name": "剑魔",
-        "image": "E:/Code/yolov5/dnf/static/npc/npc4.png",
+        "image": "static/npc/npc4.png",
+        "height": 168,
         "skills": "asdfrew",
     },
     "role_5": {
         "name": "气功2",
-        "image": "E:/Code/yolov5/dnf/static/npc/npc5.png",
+        "image": "static/npc/npc5.png",
+        "height": 158,
         "skills": "qasf",
     },
     "role_6": {
         "name": "四姨",
-        "image": "E:/Code/yolov5/dnf/static/npc/npc6.png",
+        "image": "static/npc/npc6.png",
+        "height": 170,
         "skills": "qwerafgh",
+    },
+    "role_7": {
+        "name": "刃影",
+        "image": "static/npc/npc7.png",
+        "height": 164,
+        "skills": "qwerasdfg",
+    },
+    "role_8": {
+        "name": "女漫游",
+        "image": "static/npc/npc8.png",
+        "height": 178,
+        "skills": "weryasdfx",
+    },
+    "role_9": {
+        "name": "红眼",
+        "image": "static/npc/npc9.png",
+        "height": 180,
+        "skills": "qwerasdf",
+    },
+    "role_10": {
+        "name": "审判",
+        "image": "static/npc/npc10.png",
+        "height": 180,
+        "skills": "qweawsdfw",
+    },
+    "role_11": {
+        "name": "奶妈",
+        "image": "static/npc/npc11.png",
+        "height": 173,
+        "skills": "qwertasdg",
     },
 }
 
@@ -71,7 +109,7 @@ roles = {
 def yolov5():
     global stop_drop
 
-    data = yolo.find(0.6)
+    data = yolo.find()
     drop_list = []
     monster_list = []
     door_list = []
@@ -84,7 +122,7 @@ def yolov5():
             if drop_coordinates[1] > 350:
                 drop_list.append(drop_coordinates)
         elif "door" in item:
-            door_coordinates = (item["door"][0] - 20, item["door"][1] - 25)
+            door_coordinates = (item["door"][0] + 20, item["door"][1] - 25)
             door_list.append(door_coordinates)
 
     print(f"怪物：{monster_list}, 门：{door_list}, 掉落：{drop_list}")
@@ -102,20 +140,21 @@ def yolov5():
 
 # 确定当前角色
 def choose_role():
-    global role_num
+    global role_num, role_height
     cv_role = [cv2.imread(path["image"]) for key, path in roles.items()]
-    role_data = cv.find(cv_role, list(roles.keys()))
+    role_data = cv.find(cv_role, list(roles.keys()), 0.8)
 
     role_num = list(role_data.keys())[0]
     role_name = roles[list(role_data.keys())[0]]["name"]
-    print(f"当前角色：{role_name}")
+    role_height = roles[list(role_data.keys())[0]]["height"]
+    print(f"当前角色：{role_name}, 身高：{role_height}")
 
 
 # 翻牌，再次挑战
 def again():
     global map, stop_drop
-    cv_card = [cv2.imread("E:/Code/yolov5/dnf/static/card.png")]
-    cv_again = [cv2.imread("E:/Code/yolov5/dnf/static/again.png")]
+    cv_card = [cv2.imread("static/card.png")]
+    cv_again = [cv2.imread("static/again.png")]
     data_card = cv.find(cv_card, ["card"])
 
     if data_card:
@@ -129,47 +168,46 @@ def again():
         data_again = cv.find(cv_again, ["again"])
         if data_again:
             keyboard.move(980, 713)
-
-            print("再次挑战")
-            keyboard.press("0")
-            time.sleep(0.1)
-            keyboard.release("0")
-            time.sleep(0.1)
-            keyboard.press("/")
-            time.sleep(0.1)
-            keyboard.release("/")
-            time.sleep(0.1)
-            keyboard.press("x")
-            time.sleep(0.1)
-            keyboard.release("x")
-            time.sleep(0.1)
-            keyboard.press("x")
-            time.sleep(0.1)
-            keyboard.release("x")
-            time.sleep(0.1)
-            keyboard.press("x")
-            time.sleep(0.1)
-            keyboard.release("x")
-            time.sleep(0.1)
-            keyboard.press("x")
-            time.sleep(0.1)
-            keyboard.release("x")
-            time.sleep(0.1)
-            keyboard.press("x")
-            time.sleep(0.1)
-            keyboard.release("x")
-            time.sleep(0.1)
-            map = ""
-            stop_drop = 0
-
-            cv_pl = [cv2.imread("E:/Code/yolov5/dnf/static/pl.png")]
+            cv_pl = [cv2.imread("static/pl.png")]
             data_pl = cv.find(cv_pl, ["pl"], 0.97)
-
+            time.sleep(1)
             if data_pl:
                 print("疲劳为0，切换角色")
                 change_role()
             else:
+                print("再次挑战")
+                keyboard.press("0")
+                time.sleep(0.1)
+                keyboard.release("0")
+                time.sleep(0.1)
+                keyboard.press("/")
+                time.sleep(0.1)
+                keyboard.release("/")
+                time.sleep(0.1)
+                keyboard.press("x")
+                time.sleep(0.1)
+                keyboard.release("x")
+                time.sleep(0.1)
+                keyboard.press("x")
+                time.sleep(0.1)
+                keyboard.release("x")
+                time.sleep(0.1)
+                keyboard.press("x")
+                time.sleep(0.1)
+                keyboard.release("x")
+                time.sleep(0.1)
+                keyboard.press("x")
+                time.sleep(0.1)
+                keyboard.release("x")
+                time.sleep(0.1)
+                keyboard.press("x")
+                time.sleep(0.1)
+                keyboard.release("x")
+                time.sleep(0.1)
+                map = ""
+                stop_drop = 0
                 return True
+
         else:
             return True
 
@@ -177,7 +215,7 @@ def again():
 # 选择角色
 def change_role():
     global role_num
-    cv_esc = [cv2.imread("E:/Code/yolov5/dnf/static/esc.png")]
+    cv_esc = [cv2.imread("static/esc.png")]
     time.sleep(0.5)
     keyboard.press("=")
     time.sleep(0.1)
@@ -212,7 +250,7 @@ def change_role():
 
 # 进入风暴幽城
 def go_to_fb():
-    cv_sly = [cv2.imread("E:/Code/yolov5/dnf/static/sly.png")]
+    cv_sly = [cv2.imread("static/sly.png")]
     data_sly = cv.find(cv_sly, ["sly"])
     if data_sly:
         keyboard.press("right")
@@ -269,10 +307,10 @@ def drop(drop_data):
 
 # 控制角色
 def ctrl(monster_coordinates):
-    global role_num, map, row_index, col_index, boss_ctrl
+    global role_num, role_height, map, row_index, col_index, boss_ctrl
 
-    cv_role = [cv2.imread("E:/Code/yolov5/dnf/static/role.png")]
-    data_role = cv.find(cv_role, ["role"])
+    cv_role = [cv2.imread("static/role.png")]
+    data_role = cv.find(cv_role, ["role"], height=role_height)
     role_coordinates = data_role.get("role", [])
 
     skills = roles[role_num]["skills"]
@@ -284,7 +322,7 @@ def ctrl(monster_coordinates):
         keyboard.release(skill)
         time.sleep(0.1)
         keyboard.press("left")
-        time.sleep(0.3)
+        time.sleep(1)
         keyboard.release("left")
 
     if monster_coordinates:
@@ -319,8 +357,8 @@ def ctrl(monster_coordinates):
 # 确定地图
 def which_map():
     global role_num, map, map_coordinates, room_coordinates, huodong_coordinates
-    cv_map = [cv2.imread("E:/Code/yolov5/dnf/static/map.png")]
-    cv_huodong = [cv2.imread("E:/Code/yolov5/dnf/static/huodong.png")]
+    cv_map = [cv2.imread("static/map.png")]
+    cv_huodong = [cv2.imread("static/huodong.png")]
     data_map = cv.find(cv_map, ["map"])
     data_huodong = cv.find(cv_huodong, ["huodong"])
     map_coordinate = data_map.get("map", [])
@@ -361,8 +399,8 @@ def which_map():
 # 确定房间
 def which_room():
     global map, map_coordinates, room_coordinates, huodong_coordinates, row_index, col_index, boss_ctrl
-    cv_room = [cv2.imread("E:/Code/yolov5/dnf/static/room.png")]
-    cv_room2 = [cv2.imread("E:/Code/yolov5/dnf/static/room2.png")]
+    cv_room = [cv2.imread("static/room.png")]
+    cv_room2 = [cv2.imread("static/room2.png")]
     data_room2 = cv.find(cv_room2, ["room2"])
     data_room = cv.find(cv_room, ["room"])
 
@@ -409,7 +447,7 @@ def which_room():
 
 # 找门
 def door(door_coordinates=[]):
-    global row_index, col_index, map, door_count
+    global row_index, col_index, map, door_count, role_height
 
     if door_coordinates and door_coordinates[0][1] < 300:
         door_coordinates.remove(door_coordinates[0])
@@ -438,6 +476,18 @@ def door(door_coordinates=[]):
                 keyboard.press("left")
                 time.sleep(0.7)
                 keyboard.release("left")
+                time.sleep(0.1)
+                cv_role = [cv2.imread("static/role.png")]
+                data_role = cv.find(cv_role, ["role"], height=role_height)
+                role_coordinate = data_role.get("role", [])
+                if role_coordinate[1] < 400:
+                    keyboard.press("down")
+                    time.sleep(0.2)
+                    keyboard.release("down")
+                elif role_coordinate[1] > 600:
+                    keyboard.press("up")
+                    time.sleep(0.2)
+                    keyboard.release("up")
                 door_count = 0
                 time.sleep(0.5)
                 yolov5()
@@ -458,8 +508,20 @@ def door(door_coordinates=[]):
     else:
         if door_count > 3:
             keyboard.press("left")
-            time.sleep(0.7)
+            time.sleep(1)
             keyboard.release("left")
+            time.sleep(0.1)
+            cv_role = [cv2.imread("static/role.png")]
+            data_role = cv.find(cv_role, ["role"], height=role_height)
+            role_coordinate = data_role.get("role", [])
+            if role_coordinate[1] < 400:
+                keyboard.press("down")
+                time.sleep(0.2)
+                keyboard.release("down")
+            elif role_coordinate[1] > 600:
+                keyboard.press("up")
+                time.sleep(0.2)
+                keyboard.release("up")
             door_count = 0
             time.sleep(0.5)
             yolov5()
@@ -469,7 +531,7 @@ def door(door_coordinates=[]):
             keyboard.release("right")
             time.sleep(0.1)
             keyboard.press("right")
-            time.sleep(0.7)
+            time.sleep(0.5)
             keyboard.release("right")
 
             door_count += 1
@@ -481,11 +543,17 @@ def door(door_coordinates=[]):
 
 # 移动到指定坐标
 def go(coordinates_2):
-    global role_coordinate
+    global role_coordinate, role_height
 
-    cv_role = [cv2.imread("E:/Code/yolov5/dnf/static/role.png")]
-    data_role = cv.find(cv_role, ["role"])
+    cv_role = [cv2.imread("static/role.png")]
+    data_role = cv.find(cv_role, ["role"], height=role_height)
+    print(f"角色坐标 {data_role},{role_height}")
     coordinates_1 = data_role.get("role", [])
+
+    if coordinates_1 == []:
+        keyboard.press("left")
+        time.sleep(0.5)
+        keyboard.release("left")
 
     if (
         abs(role_coordinate[0] - coordinates_1[0]) < 10
@@ -499,11 +567,6 @@ def go(coordinates_2):
     role_coordinate = coordinates_1
 
     print(f"角色坐标 {coordinates_1}，移动到坐标 {coordinates_2}")
-
-    if coordinates_1 == []:
-        keyboard.press("left")
-        time.sleep(0.5)
-        keyboard.release("left")
 
     if coordinates_1 == [] or coordinates_2 == []:
         return
@@ -535,7 +598,7 @@ def go(coordinates_2):
 
 
 def go_x(x, role_speed_x):
-    if x > 2:
+    if x > 0:
         keyboard.press("left")
         time.sleep(0.1)
         keyboard.release("left")
@@ -543,7 +606,7 @@ def go_x(x, role_speed_x):
         keyboard.press("left")
         time.sleep(abs(x) / role_speed_x)
         keyboard.release("left")
-    elif x < -2:
+    elif x < 0:
         keyboard.press("right")
         time.sleep(0.1)
         keyboard.release("right")
@@ -555,7 +618,7 @@ def go_x(x, role_speed_x):
 
 def go_y(y, role_speed_y):
     time.sleep(0.2)
-    if y > 2:
+    if y > 0:
         keyboard.press("up")
         time.sleep(0.1)
         keyboard.release("up")
@@ -563,7 +626,7 @@ def go_y(y, role_speed_y):
         keyboard.press("up")
         time.sleep(abs(y) / role_speed_y * 0.8)
         keyboard.release("up")
-    elif y < -2:
+    elif y < 0:
         keyboard.press("down")
         time.sleep(0.1)
         keyboard.release("down")
@@ -595,3 +658,4 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, handle_interrupt)
     keyboard.press("stop")
     main()
+    # choose_role()

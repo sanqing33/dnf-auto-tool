@@ -5,15 +5,10 @@ import numpy as np
 import pyautogui
 
 
-def draw_rectangle(name, top_left, bottom_right):
+def draw_rectangle(name, top_left, bottom_right, role_height=165):
     if name == "role":
         top_left = (top_left[0] + 45, top_left[1])
-        bottom_right = (bottom_right[0], bottom_right[1] + 140)
-    elif name == "G":
-        top_left = (top_left[0] - 35, top_left[1])
-        bottom_right = (bottom_right[0] + 5, bottom_right[1] + 23)
-    elif name == "suipian" or name == "wuhe":
-        bottom_right = (bottom_right[0], bottom_right[1] + 23)
+        bottom_right = (bottom_right[0], bottom_right[1] + role_height)
     elif name == "room":
         bottom_right = (bottom_right[0], bottom_right[1] - 7)
     elif name == "map" or name == "huodong":
@@ -27,8 +22,8 @@ def distance(tuple1, tuple2):
     return math.sqrt((tuple2[0] - tuple1[0]) ** 2 + (tuple2[1] - tuple1[1]) ** 2)
 
 
-def find(subimages, keys, threshold=0.7):
-    # 存储已识别的坐标
+def find(subimages, keys, threshold=0.7, height=165):
+
     coordinates = []
     result_dict = {}
 
@@ -39,7 +34,6 @@ def find(subimages, keys, threshold=0.7):
     subimage_names = keys
     subimages_with_names = list(zip(subimages, subimage_names))
 
-    # 定义在HSV颜色空间中的范围
     lower_red1 = np.array([0, 100, 100])
     upper_red1 = np.array([10, 255, 255])
     lower_red2 = np.array([160, 100, 100])
@@ -47,7 +41,6 @@ def find(subimages, keys, threshold=0.7):
 
     for subimage, name in subimages_with_names:
         if subimage is None:
-            print(f"Error: Failed to read image for {name}. Check file path.")
             continue
         sub_gray = cv2.cvtColor(subimage, cv2.COLOR_BGR2GRAY)
         result = cv2.matchTemplate(img_gray, sub_gray, cv2.TM_CCOEFF_NORMED)
@@ -58,13 +51,11 @@ def find(subimages, keys, threshold=0.7):
             bottom_right = (top_left[0] + w, top_left[1] + h)
 
             if name == "map":
-                # 获取识别出的目标物体所在区域图像并转换为HSV颜色空间
                 sub_image_found = frame[
                     top_left[1] : bottom_right[1], top_left[0] : bottom_right[0]
                 ]
                 sub_image_hsv = cv2.cvtColor(sub_image_found, cv2.COLOR_BGR2HSV)
 
-                # 对识别出的部分进行红色筛选
                 mask1 = cv2.inRange(sub_image_hsv, lower_red1, upper_red1)
                 mask2 = cv2.inRange(sub_image_hsv, lower_red2, upper_red2)
                 mask = cv2.bitwise_or(mask1, mask2)
@@ -73,14 +64,12 @@ def find(subimages, keys, threshold=0.7):
                 if red_count <= 50:
                     continue
 
-            # 如果不是map相关的name则直接处理（不进行颜色筛选）
             top_left_count = tuple(map(int, top_left))
             bottom_right_count = tuple(map(int, bottom_right))
 
             x = int(top_left_count[0] + (bottom_right_count[0] - top_left_count[0]) / 2)
             y = int(top_left_count[1] + (bottom_right_count[1] - top_left_count[1]) / 2)
 
-            # 判断是否与已识别的坐标过于接近
             add_tuple = True
             for existing_tuple in coordinates:
                 if (
@@ -91,7 +80,9 @@ def find(subimages, keys, threshold=0.7):
 
             if add_tuple:
                 coordinates.append((x, y))
-                top_left, bottom_right = draw_rectangle(name, top_left, bottom_right)
+                top_left, bottom_right = draw_rectangle(
+                    name, top_left, bottom_right, height
+                )
 
                 if (name == "room" or name == "huodong") and not (
                     top_left[0] >= 1160
@@ -99,14 +90,6 @@ def find(subimages, keys, threshold=0.7):
                     and bottom_right[0] <= 1280
                     and bottom_right[1] <= 120
                 ):
-                    continue
-
-                if name == "door" and top_left[0] < 900:
-                    continue
-
-                if (name == "G" or name == "suipian" or name == "wuhe") and top_left[
-                    1
-                ] < 400:
                     continue
 
                 cv2.rectangle(frame, top_left, bottom_right, (0, 255, 0), 2)
@@ -134,7 +117,7 @@ def find(subimages, keys, threshold=0.7):
 
 if __name__ == "__main__":
     cv_images = {
-        "role": "E:/Code/yolov5/dnf/static/role.png",
+        "role": "static/role.png",
     }
     cv = [cv2.imread(path) for key, path in cv_images.items()]
 
