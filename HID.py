@@ -2,7 +2,7 @@ import socket
 import time
 
 # 创建UDP套接字
-UDP_IP = "192.168.1.10"
+UDP_IP = "192.168.1.3"
 UDP_PORT = 8888
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

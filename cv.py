@@ -119,6 +119,8 @@ if __name__ == "__main__":
     cv_images = {
         "room": "static/room.png",
         "room2": "static/room2.png",
+        "room3": "static/room3.png",
+        "huodong": "static/huodong.png",
     }
     cv = [cv2.imread(path) for key, path in cv_images.items()]
 

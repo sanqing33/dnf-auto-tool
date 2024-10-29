@@ -8,6 +8,7 @@ import yolov5 as yolo
 import HID as keyboard
 import signal
 import threading
+import openpyxl
 
 
 def handle_interrupt(signal, frame):
@@ -28,170 +29,94 @@ map = ""
 row_index = 0
 col_index = 0
 
+main_count = 0
 count = 0
 pl_count = 0
 door_count = 0
 bug_count = 0
 room_count = 0
 ctrl_count = 0
+timing_count = 0
+role_count = 0
 
-roles = {
-    "role_0": {
-        "name": "召唤",
-        "image": "static/npc/npc0.png",
-        "height": 142,
-        "speed_x": 680,
-        "speed_y": 840,
-        "skills": "s",
-        "boss": "s",
-    },
-    "role_1": {
-        "name": "气功",
-        "image": "static/npc/npc1.png",
-        "height": 158,
-        "speed_x": 700,
-        "speed_y": 835,
-        "skills": "z",
-        "boss": "w",
-    },
-    "role_2": {
-        "name": "战法",
-        "image": "static/npc/npc2.png",
-        "height": 142,
-        "speed_x": 700,
-        "speed_y": 790,
-        "skills": "weh",
-        "boss": "f",
-    },
-    "role_3": {
-        "name": "奶萝",
-        "image": "static/npc/npc3.png",
-        "height": 142,
-        "speed_x": 720,
-        "speed_y": 875,
-        "skills": "w",
-        "boss": "s",
-    },
-    "role_4": {
-        "name": "剑魔",
-        "image": "static/npc/npc4.png",
-        "height": 168,
-        "speed_x": 680,
-        "speed_y": 830,
-        "skills": "dy",
-        "boss": "r",
-    },
-    "role_5": {
-        "name": "气功2",
-        "image": "static/npc/npc5.png",
-        "height": 158,
-        "speed_x": 650,
-        "speed_y": 850,
-        "skills": "sqx",
-        "boss": "w",
-    },
-    "role_6": {
-        "name": "四姨",
-        "image": "static/npc/npc6.png",
-        "height": 170,
-        "speed_x": 635,
-        "speed_y": 780,
-        "skills": "whyx",
-        "boss": "e",
-    },
-    "role_7": {
-        "name": "刃影",
-        "image": "static/npc/npc7.png",
-        "height": 164,
-        "speed_x": 635,
-        "speed_y": 780,
-        "skills": "th",
-        "boss": "w",
-    },
-    "role_8": {
-        "name": "女漫游",
-        "image": "static/npc/npc8.png",
-        "height": 178,
-        "speed_x": 630,
-        "speed_y": 770,
-        "skills": "x",
-        "boss": "e",
-    },
-    "role_9": {
-        "name": "红眼",
-        "image": "static/npc/npc9.png",
-        "height": 180,
-        "speed_x": 630,
-        "speed_y": 780,
-        "skills": "sh",
-        "boss": "e",
-    },
-    "role_10": {
-        "name": "审判",
-        "image": "static/npc/npc10.png",
-        "height": 180,
-        "speed_x": 650,
-        "speed_y": 760,
-        "skills": "t",
-        "boss": "d",
-    },
-    "role_11": {
-        "name": "奶妈",
-        "image": "static/npc/npc11.png",
-        "height": 173,
-        "speed_x": 740,
-        "speed_y": 870,
-        "skills": "r",
-        "boss": "d",
-    },
-}
+
+# 读取角色信息的函数
+def load_roles_from_excel(file_path):
+    workbook = openpyxl.load_workbook(file_path)
+    sheet = workbook["roles"]
+
+    roles = {}
+
+    for row in sheet.iter_rows(
+        min_row=2, values_only=True
+    ):  # 从第二行开始读取数据，第一行是标题
+        role_id = row[0]  # 假设第一列是角色ID（如 "role_0"）
+        role_info = {
+            "name": row[1],
+            "image": "static/roles/" + role_id + ".png",
+            "height": row[2],
+            "speed_x": row[3],
+            "speed_y": row[4],
+            "skills": row[5],
+            "boss": row[6],
+        }
+        roles[role_id] = role_info
+
+    return roles
 
 
 def yolov5():
-    global stop_drop, room_count, ctrl_count
-    time.sleep(0.3)
+    global stop_drop, room_count, main_count, ctrl_count
+    time.sleep(0.1)
     data = yolo.find(0.6)
-    if room_count % 2 == 0:
+    if room_count % 3 == 0:
         which_room()
+        if count_down():
+            main_count = 0
+        room_count += 1
+    else:
         room_count += 1
 
     drop_list = []
     monster_list = []
     door_list = []
 
-    for item in data:
-        if "boss" in item:
-            skills = roles[role_num]["boss"]
-            keyboard.press("right")
-            time.sleep(0.3)
-            keyboard.release("right")
-            time.sleep(0.1)
-            keyboard.press(skills)
-            time.sleep(0.1)
-            keyboard.release(skills)
-            time.sleep(0.3)
-        elif "monster" in item:
-            if 50 < item["monster"][0] < 1080:
-                if ctrl_count % 2 == 0:
-                    monster_list.append(item["monster"])
-                    ctrl_count += 1
-        elif "drop" in item:
-            drop_coordinates = (item["drop"][0], item["drop"][1] - 20)
-            if drop_coordinates[1] > 350:
-                drop_list.append(drop_coordinates)
-        elif "door" in item:
-            door_coordinates = (item["door"][0] + 20, item["door"][1] - 25)
-            door_list.append(door_coordinates)
+    if main_count == 0:
+        for item in data:
+            if "boss" in item:
+                skills = roles[role_num]["boss"]
+                keyboard.press("right")
+                time.sleep(0.3)
+                keyboard.release("right")
+                time.sleep(0.1)
+                keyboard.press(skills)
+                time.sleep(0.1)
+                keyboard.release(skills)
+                time.sleep(0.3)
+            elif "monster" in item:
+                if 50 < item["monster"][0] < 1080:
+                    if ctrl_count % 2 == 0:
+                        monster_list.append(item["monster"])
+                        ctrl_count += 1
+                    else:
+                        ctrl_count += 1
+            elif "drop" in item:
+                drop_coordinates = (item["drop"][0], item["drop"][1] - 20)
+                if drop_coordinates[1] > 350:
+                    drop_list.append(drop_coordinates)
+            elif "door" in item:
+                door_coordinates = (item["door"][0] + 20, item["door"][1] - 25)
+                door_list.append(door_coordinates)
 
-    if monster_list:
-        ctrl(monster_list)
-    elif drop_list:
-        drop(drop_list)
-    elif door_list:
-        door(door_list)
-    else:
-        if again():
-            door()
+        if monster_list:
+            ctrl(monster_list)
+        elif drop_list:
+            drop(drop_list)
+        elif door_list:
+            door(door_list)
+        else:
+            if again():
+                door()
 
 
 # 确定当前角色
@@ -210,7 +135,7 @@ def choose_role():
 
 # 翻牌，再次挑战
 def again():
-    global map, stop_drop, pl_count
+    global map, stop_drop, pl_count, timing_count
     cv_card = [cv2.imread("static/card.png")]
     cv_again = [cv2.imread("static/again.png")]
     data_card = cv.find(cv_card, ["card"])
@@ -221,6 +146,7 @@ def again():
         keyboard.press("esc")
         time.sleep(0.1)
         keyboard.release("esc")
+        timing_count = time.time()
         again()
     else:
         data_again = cv.find(cv_again, ["again"])
@@ -328,6 +254,7 @@ def change_role():
     bug_count = 0
     room_count = 0
     ctrl_count = 0
+    time.sleep(10)
     go_to_fb()
 
 
@@ -364,6 +291,14 @@ def go_to_fb():
         time.sleep(0.3)
         keyboard.click()
         time.sleep(0.3)
+        keyboard.press("up")
+        time.sleep(2)
+        keyboard.release("up")
+        time.sleep(0.1)
+        keyboard.press("down")
+        time.sleep(0.4)
+        keyboard.release("down")
+        time.sleep(0.1)
         keyboard.press("right")
         time.sleep(2)
         keyboard.release("right")
@@ -398,7 +333,7 @@ def go_to_fb():
         time.sleep(0.1)
         main()
     else:
-        go_to_fb()
+        main()
 
 
 # 识别材料
@@ -493,9 +428,8 @@ def which_room():
                 data_huodong = cv.find(cv_huodong, ["huodong"])
                 if data_huodong:
                     room_coordinates = data_huodong.get("huodong", [])
-                elif map == "map2":
-                    row_index = 2
-                    col_index = 2
+                else:
+                    room_coordinates = map_coordinates
 
     if map == "map1":
         map_top_left = (1155, 53)
@@ -522,74 +456,89 @@ def which_room():
 
     print(f"角色当前位于图 {map} 的第 {row_index} 行，第 {col_index} 列的房间中。")
 
-    if room_bug():
-        return True
+    return True
 
 
-def room_bug():
+# bug
+def room_bug(type=""):
     global map, row_index, col_index, bug_count
-    if (
-        (
-            map == "map1"
-            and (row_index == 1 or row_index == 3)
-            and (col_index == 2 or col_index == 3 or col_index == 4)
-        )
-        or (
-            map == "map2"
-            and row_index == 2
-            and (col_index == 3 or col_index == 4 or col_index == 5)
-        )
-        or (map == "map3" and row_index == 2 and (col_index == 2 or col_index == 4))
-    ):
-        bug_count += 1
-        if bug_count > 3:
-            keyboard.press("esc")
-            time.sleep(0.1)
-            keyboard.release("esc")
-            keyboard.move(730, 505)
-            time.sleep(0.5)
-            keyboard.click()
-            time.sleep(0.1)
-            keyboard.move(607, 419)
-            time.sleep(0.5)
-            keyboard.click()
-            time.sleep(1)
-            keyboard.press("right")
-            time.sleep(3)
-            keyboard.release("right")
-            time.sleep(1)
-            keyboard.press("up")
-            time.sleep(0.1)
-            keyboard.release("up")
-            time.sleep(1)
-            keyboard.move(680, 470)
-            time.sleep(1)
-            keyboard.click()
-            time.sleep(0.5)
-            keyboard.press("right")
-            time.sleep(0.1)
-            keyboard.release("right")
-            time.sleep(0.1)
-            keyboard.press("right")
-            time.sleep(0.1)
-            keyboard.release("right")
-            time.sleep(0.1)
-            keyboard.press("space")
-            time.sleep(0.1)
-            keyboard.release("space")
-            time.sleep(0.1)
-            map = ""
-            row_index = 0
-            col_index = 0
-            main()
+    bug_count += 1
+    if bug_count > 3 or type == "count_down":
+        print("重新进图...")
+        keyboard.press("esc")
+        time.sleep(0.1)
+        keyboard.release("esc")
+        keyboard.move(730, 505)
+        time.sleep(0.5)
+        keyboard.click()
+        time.sleep(0.1)
+        keyboard.move(607, 419)
+        time.sleep(0.5)
+        keyboard.click()
+        time.sleep(3)
+        keyboard.press("left")
+        time.sleep(1)
+        keyboard.release("left")
+        time.sleep(0.1)
+        keyboard.press("down")
+        time.sleep(1)
+        keyboard.release("down")
+        time.sleep(0.1)
+        keyboard.press("up")
+        time.sleep(0.2)
+        keyboard.release("up")
+        time.sleep(0.1)
+        keyboard.press("right")
+        time.sleep(3)
+        keyboard.release("right")
+        time.sleep(3)
+        keyboard.press("up")
+        time.sleep(0.1)
+        keyboard.release("up")
+        time.sleep(1)
+        keyboard.move(680, 470)
+        time.sleep(1)
+        keyboard.click()
+        time.sleep(0.5)
+        keyboard.press("right")
+        time.sleep(0.1)
+        keyboard.release("right")
+        time.sleep(0.1)
+        keyboard.press("right")
+        time.sleep(0.1)
+        keyboard.release("right")
+        time.sleep(0.1)
+        keyboard.press("space")
+        time.sleep(0.1)
+        keyboard.release("space")
+        time.sleep(0.1)
+        map = ""
+        row_index = 0
+        col_index = 0
+        main()
     else:
         bug_count = 0
         return True
 
 
+# 每一局倒计时
+def count_down():
+    global timing_count, main_count
+    if timing_count == 0:
+        timing_count = time.time()
+    current_time = time.time()
+    if current_time - timing_count >= 80:
+        print("倒计时结束未开始新对局，重新进图")
+        timing_count = current_time + 10
+        main_count = 1
+        room_bug("count_down")
+    else:
+        return True
+
+
 # 找门
 def door(door_coordinates=[]):
-    global row_index, col_index, map, door_count, role_height
+    global row_index, col_index, map, door_count, role_height, role_coordinate, role_count
 
     if door_coordinates and door_coordinates[0][1] < 300:
         door_coordinates.remove(door_coordinates[0])
@@ -607,6 +556,28 @@ def door(door_coordinates=[]):
                     door_coordinate = coordinate
                 else:
                     continue
+
+        cv_role = [cv2.imread("static/role.png")]
+        data_role = cv.find(cv_role, ["role"], height=role_height)
+        role_coordinate_count = data_role.get("role", [])
+
+        if (
+            abs(role_coordinate_count[0] - role_coordinate[0]) < 30
+            and abs(role_coordinate_count[1] - role_coordinate[1]) < 30
+        ):
+            role_count += 1
+            if role_count >= 5:
+                print("原地踏步")
+                keyboard.press("down")
+                time.sleep(0.2)
+                keyboard.release("down")
+                time.sleep(0.1)
+                keyboard.press("left")
+                time.sleep(0.2)
+                keyboard.release("left")
+                role_count = 0
+
+        role_coordinate = role_coordinate_count
 
         if door_coordinate:
             if go(door_coordinate):
@@ -653,7 +624,7 @@ def door(door_coordinates=[]):
 
 # 移动到指定坐标
 def go(coordinates_2):
-    global role_coordinate, role_height
+    global role_height
 
     cv_role = [cv2.imread("static/role.png")]
     data_role = cv.find(cv_role, ["role"], height=role_height)
@@ -670,17 +641,6 @@ def go(coordinates_2):
             time.sleep(0.2)
             keyboard.release("right")
         return True
-
-    if (
-        abs(role_coordinate[0] - coordinates_1[0]) < 10
-        and abs(role_coordinate[1] - coordinates_1[1]) < 10
-    ):
-        keyboard.press("left")
-        time.sleep(0.3)
-        keyboard.release("left")
-        return True
-
-    role_coordinate = coordinates_1
 
     if coordinates_1 == [] or coordinates_2 == []:
         return
@@ -755,4 +715,6 @@ def main():
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, handle_interrupt)
     keyboard.press("stop")
-    main()
+    # 从excel表读取角色数据
+    roles = load_roles_from_excel("roles_data.xlsx")
+    go_to_fb()
